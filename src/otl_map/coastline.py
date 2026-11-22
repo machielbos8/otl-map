@@ -69,6 +69,28 @@ def write_mask(path, grid, w):
     d.close()
 
 
+def default_cf(sp_deg):
+    """Sub-cells per side of a coastal cell for sub-cells of about 100 m: 60 at 1/16 deg (FES2014b), 32 at 1/30 deg
+    (FES2022b, TPXO10-atlas), 120 at 1/8 deg (GOT5.5); at least 8. Used by `otl-map masks` and
+    tools/produce_model.py, so that both make the sub-cells of the online service."""
+    return max(8, int(round(sp_deg / 0.0625 * 60)))
+
+
+def make_masks(model, cf=None, subcells=True):
+    """Water fractions (and coastal sub-cells) of tide model `model`, written to masks_dir(); returns
+    (mask file, sub-cell directory or None, number of coastal cells, cf)."""
+    from otl_map.paths import mask_file, masks_dir, subcells_dir, tidemodel_dir
+    g = grid_of(os.path.join(tidemodel_dir(model), "amp.m2"))
+    w = water_fraction(g)
+    masks_dir().mkdir(parents=True, exist_ok=True)
+    write_mask(mask_file(model), g, w)
+    if not subcells:
+        return mask_file(model), None, int(((w > 1e-6) & (w < 1 - 1e-6)).sum()), None
+    cf = cf or default_cf(float(g["sp"][0]))
+    _, n = write_subcells(subcells_dir(model), g, w, cf=cf)
+    return mask_file(model), subcells_dir(model), n, cf
+
+
 def write_subcells(out_dir, grid, w, cf=60, rows_per_part=120, path=None, tol=1e-6):
     """Sub-cell water fractions of the coastal cells, in parts of `rows_per_part` rows (create_subcells format):
     header int32 nx, ny, cf, row0, row1; float64 xr0, yr1, spx, spy (deg); records int64 k, float64 w,

@@ -67,8 +67,9 @@ def main(argv=None):
     st.add_argument("--no-nearfield", action="store_true", help="interpolated FFT maps only")
     st.add_argument("--harmonics", nargs="+", help="harmonics (default: all maps in the run directory)")
     m = sps["masks"]
-    m.add_argument("model", help="tide model name (its amp.m2 defines the grid)")
-    m.add_argument("--cf", type=int, default=60, help="sub-cells per cell side for coastal cells (default 60)")
+    m.add_argument("models", nargs="+", metavar="model", help="tide model name(s) (amp.m2 of each defines its grid)")
+    m.add_argument("--cf", type=int, help="sub-cells per cell side for coastal cells (default: sub-cells of about "
+                   "100 m, e.g. 60 at 1/16 deg, 32 at 1/30 deg, 120 at 1/8 deg)")
     m.add_argument("--no-subcells", action="store_true", help="water fractions only")
     a = p.parse_args(argv)
     if a.cmd is None:
@@ -125,17 +126,14 @@ def main(argv=None):
         refine_grid(a.model, a.earth, a.rundir, a.workers)
         return 0
     if a.cmd == "masks":
-        import os
-        from otl_map import coastline
-        from otl_map.paths import mask_file, masks_dir, subcells_dir, tidemodel_dir
-        g = coastline.grid_of(os.path.join(tidemodel_dir(a.model), "amp.m2"))
-        w = coastline.water_fraction(g)
-        masks_dir().mkdir(parents=True, exist_ok=True)
-        coastline.write_mask(mask_file(a.model), g, w)
-        print(f"water fractions -> {mask_file(a.model)}")
-        if not a.no_subcells:
-            files, n = coastline.write_subcells(subcells_dir(a.model), g, w, cf=a.cf)
-            print(f"{n} coastal cells, {a.cf}x{a.cf} sub-cells -> {subcells_dir(a.model)}")
+        import time
+        from otl_map.coastline import make_masks
+        for model in a.models:
+            t0 = time.time()
+            mf, sd, n, cf = make_masks(model, a.cf, subcells=not a.no_subcells)
+            print(f"{model}: water fractions -> {mf}")
+            if sd:
+                print(f"{model}: {n} coastal cells, {cf}x{cf} sub-cells -> {sd} ({time.time() - t0:.0f} s)")
         return 0
     print(f"otl-map {a.cmd}: not implemented yet in {__version__}", file=sys.stderr)
     return 2
