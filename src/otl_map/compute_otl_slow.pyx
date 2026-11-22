@@ -314,11 +314,13 @@ def main():
                     dx = R*csm*csp0
                     dy = R*csp1
                     if theta + csp0<0.15*rad:
-                        G = rho*integrate_cell(greensfnc.component,\
-                                                            cc,-xp,yp,dx,dy)
+                        # integral of G over the cell; divided by the cell area because the sum
+                        # below multiplies by rho*A (fixed 2026-11-22: rho and A were applied twice)
+                        G = integrate_cell(greensfnc.component,\
+                                                            cc,-xp,yp,dx,dy)/A
                     else:
-                        G = rho*numerical_integral(greensfnc.component,\
-                                                     greensfnc,-xp,yp,dx,dy)
+                        G = numerical_integral(greensfnc.component,\
+                                                     greensfnc,-xp,yp,dx,dy)/A
 
                 else:
                     #--- Get value of Green's function

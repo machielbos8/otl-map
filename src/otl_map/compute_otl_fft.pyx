@@ -385,7 +385,7 @@ def main():
     _sin_dlon = np.sin(_dlon_arr)   # sin(k*csp0); for alpha: sin(lon_m-lon_c)= -_sin_dlon
 
     #--- Loop over the list of grid cells for which OTL needs to be computed
-    n_workers = max(1, min(mny, os.cpu_count() or 1))
+    n_workers = max(1, min(mny, int(os.environ.get('OTL_MAP_WORKERS', 0)) or os.cpu_count() or 1))
     if verbose:
         if n_workers > 1:
             print('Parallel: {:d} workers for {:d} mesh rows.'.format(n_workers, mny))

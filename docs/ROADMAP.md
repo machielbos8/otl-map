@@ -15,9 +15,13 @@ Follows the release plan in the private otl_map repository (docs/release_plan_ot
        Validated for FES2014b against the production files of the development repository: prepared M2 equal
        to 2e-12; complete PREM bundle rebuilt from scratch (masks -> prepare -> bundle, 2.5 min on 8 cores):
        idx, sptr and the coarse kernel table identical, w0 to 2e-12, tide to 1.5e-8 m (float32), sub-cells as in 3.
-4. [ ] Station output: bilinear u/v interpolation, near-field correction, BLQ/JSON, centre-of-mass correction.
-5. [ ] CLI subcommands wired to the modules.
-6. [ ] Tests: FFT = brute force on a small SCHW grid; kernel table = FFT; end-to-end SCHW.
+4. [x] `otl-map compute` (FFT without a config file, per component) and `otl-map stations` (bilinear u/v + near
+       field, BLQ with south/west positive or JSON, optional CMC computed from the raw tide model). Validated: the
+       13 EPN stations reproduce the supplement table (FFT + near field, 429 values) to 0.0035 mm (table rounding);
+       FES2014b CMC agrees with the server coefficients to 1-2 % with the right signs. Fixed in the public copy:
+       compute_otl_slow applied rho and the cell area twice for cells integrated over the cell.
+5. [x] CLI: resample, masks, prepare, compute, bundle, refine, stations (fetch-coastline, fit-greens pending).
+6. [~] Tests: FFT = brute force (vertical) on SCHW at 0.5 deg; compute -> stations -> BLQ. Pending: kernel table = FFT.
 7. [ ] CI (GitHub Actions), wheels (cibuildwheel), trusted publishing.
 8. [ ] Coastline on Zenodo + `fetch-coastline`.
 9. [ ] Documentation: tide-model format, Green's-function format, tutorial.

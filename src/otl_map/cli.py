@@ -44,6 +44,26 @@ def main(argv=None):
     rf.add_argument("earth")
     rf.add_argument("--rundir", required=True, help="directory with the FFT grids of `otl-map compute`")
     rf.add_argument("--workers", type=int)
+    c = sps["compute"]
+    c.add_argument("model", help="tide model (its prepared <model>_mod_ext is used)")
+    c.add_argument("earth", nargs="?", default="PREM", help="PREM, PREM_disp, STW105, STW105_disp")
+    c.add_argument("--rundir", default=".", help="output directory (default .)")
+    c.add_argument("--components", nargs="+", type=int, default=[0, 1, 2], help="0 up, 1 north, 2 east")
+    c.add_argument("--harmonics", nargs="+")
+    c.add_argument("--region", nargs=4, type=float, metavar=("LON0", "LON1", "LAT0", "LAT1"),
+                   help="output nodes of the tide-model lattice inside this box (default: global)")
+    c.add_argument("--frame", choices=["CE", "CM"], default="CE")
+    c.add_argument("--raw", action="store_true", help="use the tide model as it is (not <model>_mod_ext)")
+    c.add_argument("--workers", type=int)
+    st = sps["stations"]
+    st.add_argument("model")
+    st.add_argument("earth", nargs="?", default="PREM")
+    st.add_argument("stationfile", help="lines: name lon lat [height]")
+    st.add_argument("--rundir", default=".", help="directory with the FFT grids (default .)")
+    st.add_argument("-o", "--out", required=True, help="output file (.blq or .json)")
+    st.add_argument("--cmc", action="store_true", help="add the centre-of-mass correction (BLQ output)")
+    st.add_argument("--no-nearfield", action="store_true", help="interpolated FFT maps only")
+    st.add_argument("--harmonics", nargs="+")
     m = sps["masks"]
     m.add_argument("model", help="tide model name (its amp.m2 defines the grid)")
     m.add_argument("--cf", type=int, default=60, help="sub-cells per cell side for coastal cells (default 60)")
@@ -57,6 +77,37 @@ def main(argv=None):
         out = a.out or f"{a.model}_{int(round(1 / a.spacing))}"
         d = resample_tidemodel(a.model, out, a.spacing, a.harmonics, a.fill_cells)
         print(f"{a.model} -> {out} ({a.spacing:g} deg): {d}")
+        return 0
+    if a.cmd == "compute":
+        from otl_map.compute import compute, global_mesh
+        from otl_map.paths import tidemodel_dir
+        mesh = None
+        if a.region:
+            g = global_mesh(tidemodel_dir(a.model if a.raw else f"{a.model}_mod_ext"))
+            sp = g[4]
+            snap = lambda v, lo: lo + round((v - lo) / sp) * sp  # noqa: E731
+            mesh = [snap(a.region[0], g[0]), snap(a.region[1], g[0]), snap(a.region[2], g[2]),
+                    snap(a.region[3], g[2]), sp, g[5]]
+        files = compute(a.model, a.earth, a.rundir, a.components, a.harmonics, mesh, prepared=not a.raw,
+                        workers=a.workers, frame=a.frame, verbose=True)
+        print(f"{len(files)} grids -> {a.rundir}")
+        return 0
+    if a.cmd == "stations":
+        from otl_map import stations as S
+        sta = S.read_stations(a.stationfile)
+        res = S.compute_stations(sta, a.model, a.earth, a.rundir, a.harmonics, nearfield=not a.no_nearfield)
+        if a.out.lower().endswith(".json"):
+            if a.cmc:
+                raise SystemExit("--cmc is only supported for BLQ output")
+            S.write_json(a.out, sta, res, a.model, a.earth)
+        else:
+            blq = S.to_blq_convention(res)
+            cmc = None
+            if a.cmc:
+                cmc = S.cmc_coefficients(a.model, list(next(iter(res.values())).keys()))
+                S.apply_cmc_blq(blq, sta, cmc)
+            S.write_blq(a.out, sta, blq, a.model, a.earth, cmc)
+        print(f"{len(sta)} stations -> {a.out}")
         return 0
     if a.cmd == "prepare":
         from otl_map.prepare import prepare
