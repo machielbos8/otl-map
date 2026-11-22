@@ -25,13 +25,22 @@ distributed; see the documentation for the expected format.
 
 ## Installation
 
+In a virtual environment of its own (Linux and macOS; on Windows `py -m venv` and `Scripts\Activate.ps1`):
+
 ```bash
-pip install otl-map          # not yet on PyPI
+python3 -m venv ~/venvs/otl-map
+source ~/venvs/otl-map/bin/activate
+pip install otl-map
+otl-map --version
 ```
 
-From source:
+pip also installs the dependencies (NumPy, SciPy, netCDF4, tqdm); no `requirements.txt` is needed.
+
+From source, for development:
 
 ```bash
+git clone https://github.com/machielbos8/otl-map.git && cd otl-map
+python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[test]"
 pytest
 ```
