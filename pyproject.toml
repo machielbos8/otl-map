@@ -32,6 +32,7 @@ Manual = "https://github.com/machielbos8/otl-map/blob/main/src/otl_map/docs/otl-
 
 [project.scripts]
 otl-map = "otl_map.cli:main"
+otl-map-examples = "otl_map.examples_cmd:main"
 
 [tool.setuptools.dynamic]
 version = { attr = "otl_map.__version__" }
@@ -40,4 +41,4 @@ version = { attr = "otl_map.__version__" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-otl_map = ["*.pxd", "data/greenfnc/*", "data/tidemodels/*/*", "docs/*.pdf"]
+otl_map = ["*.pxd", "data/greenfnc/*", "data/tidemodels/*/*", "docs/*.pdf", "examples/*", "examples/*/*"]

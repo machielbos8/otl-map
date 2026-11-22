@@ -36,7 +36,14 @@ pip install otl-map
 otl-map --version
 ```
 
-pip also installs the dependencies (NumPy, SciPy, netCDF4, tqdm); no `requirements.txt` is needed.
+pip also installs the dependencies (NumPy, SciPy, netCDF4, tqdm); no `requirements.txt` is needed. Then
+
+```bash
+otl-map-examples
+```
+
+copies the user manual (PDF) and the tutorial examples into a new folder `otl-map-examples`. Open the manual
+first; `cd otl-map-examples/ex1 && python example1.py` runs the first example.
 
 From source, for development:
 
