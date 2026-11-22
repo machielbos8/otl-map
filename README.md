@@ -3,7 +3,7 @@
 Global ocean tide loading (OTL) maps computed with an FFT along latitude rows, with a coastal near-field
 correction that also gives the OTL at any station.
 
-**Status: under development (0.1.0.dev0). Not yet released.**
+**Version 0.1.0** (November 2026): `pip install otl-map`. The user manual comes with the package (`otl-map-examples`).
 
 The method is described in Scherneck and Bos (in preparation), *Fast Computation of Ocean Tide Loading
 Maps* (Journal of Geodesy). otl-map is for off-line computation (maps, many stations, other tide or Earth

@@ -1,4 +1,6 @@
-# Roadmap to 0.1.0
+# Roadmap
+
+## 0.1.0 (released November 2026)
 
 Follows the release plan in the private otl_map repository (docs/release_plan_otl-map.md).
 
@@ -20,9 +22,17 @@ Follows the release plan in the private otl_map repository (docs/release_plan_ot
        13 EPN stations reproduce the supplement table (FFT + near field, 429 values) to 0.0035 mm (table rounding);
        FES2014b CMC agrees with the server coefficients to 1-2 % with the right signs. Fixed in the public copy:
        compute_otl_slow applied rho and the cell area twice for cells integrated over the cell.
-5. [x] CLI: resample, masks, prepare, compute, bundle, refine, stations (fetch-coastline, fit-greens pending).
+5. [x] CLI: resample, fetch-coastline, masks, prepare, compute, bundle, refine, stations; otl-map-examples.
 6. [~] Tests: FFT = brute force (vertical) on SCHW at 0.5 deg; compute -> stations -> BLQ. Pending: kernel table = FFT.
-7. [ ] CI (GitHub Actions), wheels (cibuildwheel), trusted publishing.
-8. [ ] Coastline on Zenodo + `fetch-coastline`.
-9. [ ] Documentation: tide-model format, Green's-function format, tutorial.
-10. [ ] 0.1.0 on TestPyPI, then PyPI; Zenodo DOI.
+7. [x] CI (GitHub Actions): sdist + wheels (Linux x86_64/aarch64, macOS arm64, Windows; Python 3.10-3.14), each
+       tested; TestPyPI for rc tags, PyPI for release tags (trusted publishing).
+8. [x] `fetch-coastline` from the GitHub release coastline-v2 (checksum verified). Zenodo: later.
+9. [x] User manual (PDF, in the package): installation, conventions, method, tutorial with three examples,
+       commands, Python API, file formats.
+10. [x] 0.1.0rc1 on TestPyPI (tested from a clean install), 0.1.0 on PyPI.
+
+## Next
+
+- Kernel-table test (coarse table = FFT kernel).
+- `otl-map fit-greens`: pole-plus-polynomial constants for a user Green's function.
+- Zenodo: DOI for the software and the coastline.
