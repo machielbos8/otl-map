@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "otl-map"
-version = "0.1.0.dev0"
+dynamic = ["version"]
 description = "Global ocean tide loading maps with an FFT along latitude rows and a coastal near-field correction"
 readme = "README.md"
 license = "LicenseRef-otl-map"
@@ -25,13 +25,19 @@ plot = ["matplotlib"]
 test = ["pytest"]
 
 [project.urls]
-"Online OTL service" = "https://otl.teromovigo.com"
+Repository = "https://github.com/machielbos8/otl-map"
+Manual = "https://github.com/machielbos8/otl-map/blob/main/src/otl_map/docs/otl-map_manual_v0.1.pdf"
+"OTL API" = "https://otl.teromovigo.com"
+"Onsala OTL service" = "https://elder.oso.chalmers.se/loading/l.php"
 
 [project.scripts]
 otl-map = "otl_map.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "otl_map.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-otl_map = ["*.pxd", "data/greenfnc/*", "data/tidemodels/*/*"]
+otl_map = ["*.pxd", "data/greenfnc/*", "data/tidemodels/*/*", "docs/*.pdf"]

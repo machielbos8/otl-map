@@ -1,4 +1,4 @@
-"""Command-line interface `otl-map` (skeleton: subcommands are being ported, see docs/ROADMAP.md)."""
+"""Command-line interface `otl-map`."""
 from __future__ import annotations
 
 import argparse
@@ -8,14 +8,13 @@ from otl_map import __version__
 
 SUBCOMMANDS = {
     "resample": "put a (coarse) tide model on a fine global grid, e.g. Schwiderski on 1/16 deg",
-    "fetch-coastline": "download and verify the full-resolution coastline (Zenodo)",
+    "fetch-coastline": "download and verify the full-resolution coastline (once; needed by masks)",
     "masks": "water fractions of the cells (and sub-cells of coastal cells) of a tide-model grid",
     "prepare": "water fractions, scaling and one-cell extension of a tide model",
     "compute": "FFT map for given harmonics, components and region",
     "bundle": "near-field bundle for a tide model and Earth model",
     "refine": "refined grid at the coastal nodes (Eq. 6)",
     "stations": "OTL at stations (BLQ/JSON), optionally with the centre-of-mass correction",
-    "fit-greens": "pole-plus-polynomial constants for a user Green's function",
 }
 
 
@@ -66,6 +65,10 @@ def main(argv=None):
     st.add_argument("--cmc", action="store_true", help="add the centre-of-mass correction (BLQ output)")
     st.add_argument("--no-nearfield", action="store_true", help="interpolated FFT maps only")
     st.add_argument("--harmonics", nargs="+", help="harmonics (default: all maps in the run directory)")
+    fc = sps["fetch-coastline"]
+    fc.add_argument("--dest", help="where to put it (default: the cache directory, ~/.cache/otl-map)")
+    fc.add_argument("--url", help="other source: URL or a local .gz copy")
+    fc.add_argument("--force", action="store_true", help="download again even if a verified copy exists")
     m = sps["masks"]
     m.add_argument("models", nargs="+", metavar="model", help="tide model name(s) (amp.m2 of each defines its grid)")
     m.add_argument("--cf", type=int, help="sub-cells per cell side for coastal cells (default: sub-cells of about "
@@ -124,6 +127,10 @@ def main(argv=None):
     if a.cmd == "refine":
         from otl_map.refine_grid import refine_grid
         refine_grid(a.model, a.earth, a.rundir, a.workers)
+        return 0
+    if a.cmd == "fetch-coastline":
+        from otl_map.fetch import URL, fetch_coastline
+        fetch_coastline(a.dest, a.url or URL, a.force)
         return 0
     if a.cmd == "masks":
         import time

@@ -1,0 +1,7 @@
+# Source distribution: the Cython sources (the wheels are built from them), the manual, the tests.
+recursive-include src/otl_map *.pyx *.pxd
+recursive-include src/otl_map/data *
+recursive-include src/otl_map/docs *.pdf
+recursive-exclude src/otl_map *.c *.so *.pyd
+graft tests
+global-exclude __pycache__ *.py[cod] .DS_Store
