@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=77", "wheel", "Cython>=3.0", "numpy>=2.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "otl-map"
+version = "0.1.0.dev0"
+description = "Global ocean tide loading maps with an FFT along latitude rows and a coastal near-field correction"
+readme = "README.md"
+license = "LicenseRef-otl-map"
+license-files = ["LICENSE"]
+authors = [{ name = "Machiel Bos", email = "machiel.bos@teromovigo.com" }]
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "netCDF4", "tqdm"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Cython",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Intended Audience :: Science/Research",
+]
+
+[project.optional-dependencies]
+plot = ["matplotlib"]
+test = ["pytest"]
+
+[project.urls]
+"Online OTL service" = "https://otl.teromovigo.com"
+
+[project.scripts]
+otl-map = "otl_map.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+otl_map = ["*.pxd", "data/greenfnc/*", "data/tidemodels/*/*"]
