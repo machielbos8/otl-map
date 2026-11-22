@@ -11,7 +11,7 @@ license = "LicenseRef-otl-map"
 license-files = ["LICENSE"]
 authors = [{ name = "Machiel Bos", email = "machiel.bos@teromovigo.com" }]
 requires-python = ">=3.10"
-dependencies = ["numpy>=1.24", "netCDF4", "tqdm"]
+dependencies = ["numpy>=1.24", "scipy", "netCDF4", "tqdm"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Cython",
