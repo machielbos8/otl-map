@@ -6,8 +6,10 @@ correction that also gives the OTL at any station.
 **Status: under development (0.1.0.dev0). Not yet released.**
 
 The method is described in Scherneck and Bos (in preparation), *Fast Computation of Ocean Tide Loading
-Maps* (Journal of Geodesy). For OTL values at stations computed with modern tide models (FES2014b, FES2022b,
-GOT5.5, TPXO10-atlas), use the online service at <https://otl.teromovigo.com>.
+Maps* (Journal of Geodesy). otl-map is for off-line computation (maps, many stations, other tide or Earth
+models). For the OTL corrections of some stations, use the Onsala service at
+<https://elder.oso.chalmers.se/loading/l.php>; for automatic computations from your own software, the OTL
+API at <https://otl.teromovigo.com> (FES2014b, FES2022b, GOT5.5, TPXO10-atlas).
 
 ## What it does
 
