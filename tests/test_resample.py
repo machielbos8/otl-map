@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-from otl_map.resample import read_grid, resample_tidemodel, target_lattice
+from otl_map.resample import read_grid, resample_tidemodel, target_lattice, write_grid
 from otl_map.paths import tidemodel_dir
 
 
@@ -29,3 +29,19 @@ def test_resample_schw(tmp_path, monkeypatch):
     # central Asia stays land, south of the Schwiderski grid stays land
     assert A["z"][int((90 - 45) / 0.5), int(90 / 0.5)] >= 999
     assert (A["z"][-10:, :] >= 999).all()
+
+
+def test_duplicate_seam_column_is_dropped(tmp_path):
+    """FES2022b/TPXO10-atlas as distributed: cell centres 0..360 inclusive (nx = 360/sp + 1)."""
+    from otl_map.resample import has_seam_duplicate
+    sp = 30.0
+    nx, ny = 13, 7                                       # centres 0, 30, ..., 360
+    z = np.arange(ny * nx, dtype=float).reshape(ny, nx)
+    z[:, -1] = z[:, 0]
+    xr, yr = np.array([-sp / 2, 360 + sp / 2]), np.array([-90 - sp / 2, 90 + sp / 2])
+    write_grid(str(tmp_path / "amp.m2"), z, xr, yr, np.array([sp, sp]), "amplitude", "seam")
+    assert has_seam_duplicate(nx, sp)
+    g = read_grid(str(tmp_path / "amp.m2"))
+    assert g["seam_dropped"] and g["nx"] == 12 and g["z"].shape == (7, 12)
+    assert np.isclose(g["xr"][1], 360 - sp / 2) and np.isclose(g["x"][-1], 330.0)
+    assert not read_grid(str(tmp_path / "amp.m2"), drop_seam=False)["seam_dropped"]

@@ -31,16 +31,13 @@ def land_leaves(path: str | None = None):
 
 
 def grid_of(amp_file):
-    """Grid of a tide-model file (GMT classic layout): degrees, pixel registered."""
-    d = nc.Dataset(amp_file)
-    xr = np.array(d["x_range"][:], float)
-    yr = np.array(d["y_range"][:], float)
-    sp = np.array(d["spacing"][:], float)
-    nx, ny = (int(v) for v in d["dimension"][:])
-    d.close()
-    if abs(nx * sp[0] - 360.0) > 1e-6:
-        raise ValueError(f"{amp_file}: {nx} columns x {sp[0]} deg != 360 deg (a global grid is required)")
-    return dict(xr=xr, yr=yr, sp=sp, nx=nx, ny=ny)
+    """Grid of a tide-model file (GMT classic layout): degrees, pixel registered; a duplicate 360-deg column is
+    dropped as in otl_map.resample.read_grid."""
+    from otl_map.resample import read_grid
+    g = read_grid(amp_file)
+    if abs(g["nx"] * g["sp"][0] - 360.0) > 1e-6:
+        raise ValueError(f"{amp_file}: {g['nx']} columns x {g['sp'][0]} deg != 360 deg (a global grid is required)")
+    return dict(xr=g["xr"], yr=g["yr"], sp=g["sp"], nx=g["nx"], ny=g["ny"])
 
 
 def water_fraction(grid, path=None, row0=0, row1=-1):
@@ -93,7 +90,8 @@ def write_subcells(out_dir, grid, w, cf=60, rows_per_part=120, path=None, tol=1e
         # sub-cells entirely beyond a pole count as land (QuadtreeMask::exact returns 1 = land there)
         jj = np.arange(cf)
         top = grid["yr"][1] - ((cells // nx)[:, None] * cf + jj[None, :]) * grid["sp"][1] / cf     # deg
-        beyond = (top - grid["sp"][1] / cf >= 90.0) | (top <= -90.0)                                     # (ncell, cf)
+        eps = 1e-9                                         # an edge exactly on a pole counts as beyond it
+        beyond = (top - grid["sp"][1] / cf >= 90.0 - eps) | (top <= -90.0 + eps)                         # (ncell, cf)
         if beyond.any():
             ww = ww.reshape(len(cells), cf, cf)
             ww[np.broadcast_to(beyond[:, :, None], ww.shape)] = 0.0

@@ -24,8 +24,17 @@ from otl_map.paths import derived_dir, tidemodel_dir
 LAND = 999.9
 
 
-def read_grid(path):
-    """GMT classic grid: dict with z (ny, nx), cell-centre coordinates x (lon), y (lat, north to south)."""
+def has_seam_duplicate(nx, sp):
+    """True for a global lattice whose last column repeats the first (cell centres 0 .. 360 inclusive, e.g.
+    FES2022b and TPXO10-atlas as distributed: 10801 columns of 1/30 deg); same rule as compute_otl_fft."""
+    return abs((nx - 1) * sp - 360.0) < 1e-4
+
+
+def read_grid(path, drop_seam=True):
+    """GMT classic grid: dict with z (ny, nx), cell-centre coordinates x (lon), y (lat, north to south).
+
+    A duplicate 360-deg column is dropped (drop_seam), so that all tools see the periodic lattice of nx = 360/sp
+    columns that the FFT uses; the dict then has seam_dropped=True."""
     d = nc.Dataset(path)
     xr = np.array(d["x_range"][:], float)
     yr = np.array(d["y_range"][:], float)
@@ -33,8 +42,14 @@ def read_grid(path):
     nx, ny = (int(v) for v in d["dimension"][:])
     z = np.array(d["z"][:], float).reshape(ny, nx)
     d.close()
+    dropped = False
+    if drop_seam and has_seam_duplicate(nx, sp[0]):
+        z = np.ascontiguousarray(z[:, : nx - 1])
+        nx -= 1
+        xr = np.array([xr[0], xr[1] - sp[0]])
+        dropped = True
     return dict(z=z, x=xr[0] + sp[0] * (np.arange(nx) + 0.5), y=yr[1] - sp[1] * (np.arange(ny) + 0.5),
-                xr=xr, yr=yr, sp=sp, nx=nx, ny=ny)
+                xr=xr, yr=yr, sp=sp, nx=nx, ny=ny, seam_dropped=dropped)
 
 
 def write_grid(path, z, xr, yr, sp, long_name, title):
