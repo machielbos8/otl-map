@@ -19,7 +19,7 @@ import netCDF4 as nc
 import numpy as np
 from scipy.ndimage import distance_transform_edt
 
-from otl_map.paths import tidemodel_dir
+from otl_map.paths import derived_dir, tidemodel_dir
 
 LAND = 999.9
 
@@ -130,7 +130,7 @@ def resample_tidemodel(name, out_name, spacing=0.0625, harmonics=None, fill_cell
     if harmonics is None:
         harmonics = sorted(f.split(".", 1)[1] for f in os.listdir(sdir) if f.startswith("amp."))
     tgt = target_lattice(spacing)
-    odir = tidemodel_dir(out_name, create=True)
+    odir = derived_dir(out_name)
     for h in harmonics:
         A = read_grid(os.path.join(sdir, f"amp.{h}"))
         P = read_grid(os.path.join(sdir, f"pha.{h}"))

@@ -20,15 +20,18 @@ MESH = [200.0, 201.0, 0.0, 0.5, 0.5, 0.5]         # 3 x 2 nodes in the open equa
 @pytest.fixture(scope="module")
 def schw2(tmp_path_factory):
     d = tmp_path_factory.mktemp("data")
-    os.environ["OTL_MAP_DATA"] = str(d)
+    mp = pytest.MonkeyPatch()
+    mp.setenv("OTL_MAP_DATA", str(d))
     resample_tidemodel("SCHW", "SCHW_2", spacing=0.5, harmonics=["m2"])
     run = d / "run"
     compute("SCHW_2", "PREM", str(run), components=[0], harmonics=["m2"], mesh=MESH, prepared=False, workers=2)
+    mp.undo()
     return d, run
 
 
-def test_fft_equals_brute_force(schw2):
+def test_fft_equals_brute_force(schw2, monkeypatch):
     d, run = schw2
+    monkeypatch.setenv("OTL_MAP_DATA", str(d))
     C = json.load(open(os.path.join(greenfnc_dir(), "greensfunction_approx.json")))["PREM.dat"]["0"]
     cfg = dict(tidemodel="SCHW_2", greensfunction="PREM.dat", component=0, harmonics=["m2"], mesh=MESH,
                rho=1030.0, verbose=False, label="brute", constants=C)
@@ -48,8 +51,9 @@ def test_fft_equals_brute_force(schw2):
     assert np.abs(F - B).max() < 0.01 + 2e-4 * np.abs(B).max()
 
 
-def test_stations_end_to_end(schw2, tmp_path):
+def test_stations_end_to_end(schw2, tmp_path, monkeypatch):
     d, run = schw2
+    monkeypatch.setenv("OTL_MAP_DATA", str(d))
     st = [dict(name="NODE", lon=201.0, lat=0.0, h=0.0), dict(name="MID", lon=200.25, lat=0.25, h=0.0)]
     res = S.compute_stations(st, "SCHW_2", "PREM", str(run), ["m2"], nearfield=False, components=[0])
     g = nc.Dataset(run / "amp_fft0_fft.m2")

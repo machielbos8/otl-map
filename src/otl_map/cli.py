@@ -125,16 +125,15 @@ def main(argv=None):
     if a.cmd == "masks":
         import os
         from otl_map import coastline
-        from otl_map.paths import cache_dir, tidemodel_dir
+        from otl_map.paths import mask_file, masks_dir, subcells_dir, tidemodel_dir
         g = coastline.grid_of(os.path.join(tidemodel_dir(a.model), "amp.m2"))
         w = coastline.water_fraction(g)
-        d = cache_dir() / "masks"
-        d.mkdir(parents=True, exist_ok=True)
-        coastline.write_mask(str(d / f"mask_{a.model}.nc"), g, w)
-        print(f"water fractions -> {d / f'mask_{a.model}.nc'}")
+        masks_dir().mkdir(parents=True, exist_ok=True)
+        coastline.write_mask(mask_file(a.model), g, w)
+        print(f"water fractions -> {mask_file(a.model)}")
         if not a.no_subcells:
-            files, n = coastline.write_subcells(str(cache_dir() / f"subcells_{a.model}"), g, w, cf=a.cf)
-            print(f"{n} coastal cells, {a.cf}x{a.cf} sub-cells -> {cache_dir() / f'subcells_{a.model}'}")
+            files, n = coastline.write_subcells(subcells_dir(a.model), g, w, cf=a.cf)
+            print(f"{n} coastal cells, {a.cf}x{a.cf} sub-cells -> {subcells_dir(a.model)}")
         return 0
     print(f"otl-map {a.cmd}: not implemented yet in {__version__}", file=sys.stderr)
     return 2

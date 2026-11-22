@@ -31,7 +31,7 @@ import netCDF4 as nc
 import numpy as np
 
 from otl_map.subcells_io import read_subcells  # noqa: E402
-from otl_map.paths import cache_dir, greenfnc_dir, tidemodel_dir  # noqa: E402
+from otl_map.paths import bundle_root, greenfnc_dir, mask_file as mask_path, subcells_dir, tidemodel_dir  # noqa: E402
 from otl_map._runlog import Run  # noqa: E402
 
 HARMS = ["m2", "s2", "n2", "k2", "k1", "o1", "p1", "q1", "mf", "mm", "ssa"]
@@ -84,10 +84,11 @@ def build_bundle(model, earths=("PREM",), ncell=None, out=None, workers=None):
     ncell: patch half-width in cells (default about 0.25 deg, at least 4)."""
     earths = list(earths)
     NCELL = ncell
-    out = out or str(cache_dir() / ("refine_bundle_v2" if not NCELL else f"refine_bundle_v2_np{NCELL}") / model)
+    root = bundle_root()
+    out = out or str(root / model if not NCELL else root.parent / f"refine_bundle_v2_np{NCELL}" / model)
     tide_dir = tidemodel_dir(f"{model}_mod_ext")
-    mask_file = str(cache_dir() / "masks" / f"mask_{model}.nc")
-    parts = sorted(glob(str(cache_dir() / f"subcells_{model}" / "part_*.bin")))
+    mask_file = mask_path(model)
+    parts = sorted(glob(os.path.join(subcells_dir(model), "part_*.bin")))
     if not os.path.isfile(mask_file) or not parts:
         raise FileNotFoundError(f"water fractions/sub-cells of {model} not found: run `otl-map masks {model}`")
     inputs = [mask_file, f"{tide_dir}/amp.m2"] + parts

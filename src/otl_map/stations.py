@@ -20,7 +20,7 @@ import netCDF4 as nc
 import numpy as np
 
 from otl_map import __version__
-from otl_map.paths import cache_dir, tidemodel_dir
+from otl_map.paths import bundle_root, tidemodel_dir
 from otl_map.resample import read_grid
 
 BLQ_HARMS = ["m2", "s2", "n2", "k2", "k1", "o1", "p1", "q1", "mf", "mm", "ssa"]
@@ -89,7 +89,7 @@ def compute_stations(stations, model, earth="PREM", rundir=".", harmonics=None, 
                 res[s["name"]].setdefault(h, np.zeros(3, complex))[c] = bilinear(x, y, U, s["lon"], s["lat"])
     if nearfield:
         from otl_map.nearfield import Bundle
-        bdir = bundle or str(cache_dir() / "refine_bundle_v2" / model)
+        bdir = bundle or str(bundle_root() / model)
         if not os.path.isfile(os.path.join(bdir, "meta.json")):
             raise FileNotFoundError(f"near-field bundle {bdir} not found: run `otl-map bundle {model} {earth}` "
                                     "or use nearfield=False")

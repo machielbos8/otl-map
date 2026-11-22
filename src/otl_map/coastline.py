@@ -19,17 +19,9 @@ import netCDF4 as nc
 import numpy as np
 
 from otl_map._quadtree import land_area, read_land_leaves, subcell_land
-from otl_map.paths import cache_dir
+from otl_map.paths import coastline_file
 
-COASTLINE = "quadtree_0.00137_v2.dat"
 RAD = math.pi / 180.0
-
-
-def coastline_file() -> str:
-    f = os.environ.get("OTL_MAP_COASTLINE") or str(cache_dir() / COASTLINE)
-    if not os.path.isfile(f):
-        raise FileNotFoundError(f"coastline {f} not found: run `otl-map fetch-coastline` or set OTL_MAP_COASTLINE")
-    return f
 
 
 @lru_cache(maxsize=2)

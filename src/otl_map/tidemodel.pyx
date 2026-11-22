@@ -12,7 +12,7 @@
 #===============================================================================
 
 import os
-from otl_map.paths import greenfnc_dir, tidemodel_dir
+from otl_map.paths import derived_dir, greenfnc_dir, tidemodel_dir
 import sys
 import json
 import netCDF4 as nc
@@ -191,7 +191,7 @@ cdef write_tidemodel(tidemodel,harm,u,v,xr,yr,sp,nx,ny):
     cdef rad = pi/180.0
 
     #--- Create directory name with amp and pha files
-    directory = tidemodel_dir(tidemodel, create=True) + '/'
+    directory = derived_dir(tidemodel) + '/'
     if not os.path.exists(directory):
        os.makedirs(directory)
 

@@ -23,7 +23,7 @@ def test_extension_wraps_in_longitude_not_over_poles():
 
 
 def test_prepare_scales_by_water_fraction(tmp_path, monkeypatch):
-    monkeypatch.setenv("OTL_MAP_TIDEMODELS", str(tmp_path / "tm"))
+    monkeypatch.setenv("OTL_MAP_TIDEMODELS", str(tmp_path / "tm"))      # raw models: read only
     monkeypatch.setenv("OTL_MAP_CACHE", str(tmp_path / "cache"))
     t = target_lattice(30.0)                             # 12 x 7 cells
     amp = np.full((t["ny"], t["nx"]), 999.9)
@@ -36,6 +36,7 @@ def test_prepare_scales_by_water_fraction(tmp_path, monkeypatch):
     (tmp_path / "cache" / "masks").mkdir(parents=True)
     write_grid(str(tmp_path / "cache" / "masks" / "mask_TOY.nc"), w, t["xr"], t["yr"], t["sp"], "amplitude", "w")
     d = prepare("TOY")
+    assert not d.startswith(str(tmp_path / "tm"))                       # derived models never go to the raw directory
     a, p = read_grid(f"{d}/amp.m2")["z"], read_grid(f"{d}/pha.m2")["z"]
     assert np.isclose(a[3, 3], 0.5) and np.isclose(p[3, 3], 90.0)
     assert np.isclose(a[3, 1], 0.5) and np.isclose(a[2, 3], 0.5)      # extended cells, scaled

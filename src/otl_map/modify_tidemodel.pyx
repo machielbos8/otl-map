@@ -81,10 +81,9 @@ cdef read_mask(tidemodel):
     """
 
     #--- Find file
-    # TODO(otl-map): water fractions from otl_map.coastline (release plan 4.2); until then a precomputed
-    # mask_<model>.nc in $OTL_MAP_CPP or <cache>/masks
-    from otl_map.paths import cache_dir
-    cpp_dir = os.environ.get('OTL_MAP_CPP') or str(cache_dir() / 'masks')
+    # water fractions of `otl-map masks` (otl_map.paths.masks_dir)
+    from otl_map.paths import masks_dir
+    cpp_dir = str(masks_dir())
     fname = os.path.join(cpp_dir, 'mask_' + tidemodel + '.nc')
 
     #--- Read amplitude and phase-lag map

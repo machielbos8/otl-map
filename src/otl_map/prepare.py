@@ -14,7 +14,7 @@ import os
 import netCDF4 as nc
 import numpy as np
 
-from otl_map.paths import cache_dir, tidemodel_dir
+from otl_map.paths import derived_dir, mask_file, tidemodel_dir
 from otl_map.resample import read_grid, write_grid
 
 
@@ -52,8 +52,7 @@ def extend_one_cell(u, v, land):
 
 
 def read_mask(model):
-    f = os.environ.get("OTL_MAP_CPP")
-    f = os.path.join(f, f"mask_{model}.nc") if f else str(cache_dir() / "masks" / f"mask_{model}.nc")
+    f = mask_file(model)
     if not os.path.isfile(f):
         raise FileNotFoundError(f"{f} not found: run `otl-map masks {model}` first")
     return read_grid(f)["z"]
@@ -67,7 +66,7 @@ def prepare(model, harmonics=None, extend=True, out=None):
     w = read_mask(model)
     if out is None:
         out = f"{model}_mod_ext" if extend else f"{model}_mod"
-    odir = tidemodel_dir(out, create=True)
+    odir = derived_dir(out)
     for h in harmonics:
         A = read_grid(os.path.join(src, f"amp.{h}"))
         P = read_grid(os.path.join(src, f"pha.{h}"))

@@ -19,7 +19,7 @@ import netCDF4 as nc
 import numpy as np
 
 from otl_map.bundle import dilate  # noqa: E402
-from otl_map.paths import cache_dir  # noqa: E402
+from otl_map.paths import bundle_root  # noqa: E402
 from otl_map._runlog import Run  # noqa: E402
 
 _B = None
@@ -45,7 +45,7 @@ def refine_grid(model, earth, rundir, workers=None, bundle=None):
     components found in the bundle); writes amp/pha_nfv2{comp}_fft.<harm> next to them."""
     workers = workers or min(8, os.cpu_count() or 1)
     earths = [earth]
-    bundle = bundle or str(cache_dir() / "refine_bundle_v2" / model)
+    bundle = bundle or str(bundle_root() / model)
     idx, sptr = np.load(f"{bundle}/idx.npy"), np.load(f"{bundle}/sptr.npy")
     import json
     meta = json.load(open(f"{bundle}/meta.json"))
