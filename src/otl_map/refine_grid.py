@@ -6,11 +6,8 @@ At every grid node whose +-N patch holds a coastal cell:  u_ref = u_fft + NF_fin
 keep u_fft.  Writes amp/pha_nfv2{comp}_{label}.{harm} next to the fft grids (int16, same encoding),
 leaving the old refine grids untouched.
 
-Run from the repo root:
-  OTL_MAP=$PWD env/bin/python tools/refine_grid.py FES2014b PREM [PREM_disp STW105 STW105_disp]
-Options: --workers N (default 8), --rundir DIR (default runs/<earth>_World_<model>; one Earth model only).
-The note 'seconds_correction' is the time for the near-field corrections alone (paper Table 2);
-'seconds' includes writing the grids.
+Command line: otl-map refine <model> <earth> --rundir DIR (directory with the amp/pha_fft{comp}_fft.<harm> grids
+of `otl-map compute`); the bundle is read from <cache>/refine_bundle_v2/<model> (`otl-map bundle`).
 """
 import os
 import shutil
@@ -21,7 +18,8 @@ from concurrent.futures import ProcessPoolExecutor
 import netCDF4 as nc
 import numpy as np
 
-from build_refine_bundle_v2 import dilate  # noqa: E402
+from otl_map.bundle import dilate  # noqa: E402
+from otl_map.paths import cache_dir  # noqa: E402
 from otl_map._runlog import Run  # noqa: E402
 
 _B = None
@@ -42,18 +40,12 @@ def _work(args):
     return out
 
 
-def main():
-    import argparse
-    ap = argparse.ArgumentParser()
-    ap.add_argument("model")
-    ap.add_argument("earths", nargs="*", default=["PREM"])
-    ap.add_argument("--workers", type=int, default=8)
-    ap.add_argument("--rundir")
-    a = ap.parse_args()
-    model, earths, workers = a.model, a.earths, a.workers
-    if a.rundir and len(earths) != 1:
-        raise SystemExit("--rundir needs exactly one Earth model")
-    bundle = f"refine_bundle_v2/{model}"
+def refine_grid(model, earth, rundir, workers=None, bundle=None):
+    """Refine the FFT grids in `rundir` at all nodes whose patch holds a coastal cell (all harmonics and
+    components found in the bundle); writes amp/pha_nfv2{comp}_fft.<harm> next to them."""
+    workers = workers or min(8, os.cpu_count() or 1)
+    earths = [earth]
+    bundle = bundle or str(cache_dir() / "refine_bundle_v2" / model)
     idx, sptr = np.load(f"{bundle}/idx.npy"), np.load(f"{bundle}/sptr.npy")
     import json
     meta = json.load(open(f"{bundle}/meta.json"))
@@ -65,8 +57,8 @@ def main():
     nodes = list(zip(ii.tolist(), jj.tolist()))
     chunks = [nodes[k:k + 2000] for k in range(0, len(nodes), 2000)]
     for earth in earths:
-        rd = a.rundir or f"runs/{earth}_World_{model}"
-        inputs = [f"{bundle}/meta.json", f"{bundle}/coarse_{earth}.npy", "src/otl_map/nearfield.py"]
+        rd = rundir
+        inputs = [f"{bundle}/meta.json", f"{bundle}/coarse_{earth}.npy"]
         inputs += [f"{rd}/amp_fft0_fft.m2"]
         with Run(f"unified refinement: global refined grids {model} {earth} (nfv2)",
                  params=dict(model=model, earth=earth, nodes=len(nodes), workers=workers, rundir=rd),
@@ -106,4 +98,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    refine_grid(sys.argv[1], sys.argv[2], sys.argv[3])

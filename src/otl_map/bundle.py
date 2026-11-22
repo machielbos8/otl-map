@@ -16,8 +16,9 @@
 Stored cells: every cell within 2N columns/rows (Chebyshev, wrapping in longitude) of a coastal cell, so
 the +-N patch of any station whose patch contains a coastal cell is complete.
 
-Run from the repo root:
-  OTL_MAP=$PWD env/bin/python tools/build_refine_bundle_v2.py FES2014b PREM [STW105 ...]
+Inputs: the water fractions and sub-cells of `otl-map masks <model>` (cache directory) and the prepared
+tide model <model>_mod_ext (`otl-map prepare <model>`). Output: <cache>/refine_bundle_v2/<model>.
+Command line: otl-map bundle <model> [PREM STW105 ...]
 """
 import json
 import math
@@ -30,6 +31,7 @@ import netCDF4 as nc
 import numpy as np
 
 from otl_map.subcells_io import read_subcells  # noqa: E402
+from otl_map.paths import cache_dir, greenfnc_dir, tidemodel_dir  # noqa: E402
 from otl_map._runlog import Run  # noqa: E402
 
 HARMS = ["m2", "s2", "n2", "k2", "k1", "o1", "p1", "q1", "mf", "mm", "ssa"]
@@ -64,7 +66,7 @@ def _rows(args):
     gf_file, rows, cy1, csp, M, ny = args
     from otl_map.coarse_kernel import load_gf, table_for_row
     if gf_file not in _G:
-        C = json.load(open("greenfnc/greensfunction_approx.json"))[gf_file]
+        C = json.load(open(os.path.join(greenfnc_dir(), "greensfunction_approx.json")))[gf_file]
         _G[gf_file] = ([load_gf(gf_file, c) for c in range(3)], [C[str(c)] for c in range(3)])
     gfs, ccs = _G[gf_file]
     out = []
@@ -77,19 +79,21 @@ def _rows(args):
     return out
 
 
-def main():
-    model, earths = sys.argv[1], sys.argv[2:] or ["PREM"]
-    # OTL_BUNDLE_NCELL: patch half-width in cells for a sensitivity test (default 0.25 deg); writes to
-    # refine_bundle_v2_np<N>/<model> so the production bundle is untouched.
-    NCELL = os.environ.get("OTL_BUNDLE_NCELL")
-    out = f"refine_bundle_v2/{model}" if not NCELL else f"refine_bundle_v2_np{NCELL}/{model}"
-    tide_dir = f"surfaceloads/{model}_mod_ext"
-    parts = sorted(glob(f"cpp/subcells_{model}/part_*.bin"))
-    inputs = [f"cpp/mask_{model}.nc", f"{tide_dir}/amp.m2", "greenfnc/greensfunction_approx.json",
-              "src/otl_map/coarse_kernel.py"] + parts + [f"greenfnc/{GF_FILE[e]}" for e in earths]
+def build_bundle(model, earths=("PREM",), ncell=None, out=None, workers=None):
+    """Near-field bundle for <model> and the given Earth models; returns the output directory.
+    ncell: patch half-width in cells (default about 0.25 deg, at least 4)."""
+    earths = list(earths)
+    NCELL = ncell
+    out = out or str(cache_dir() / ("refine_bundle_v2" if not NCELL else f"refine_bundle_v2_np{NCELL}") / model)
+    tide_dir = tidemodel_dir(f"{model}_mod_ext")
+    mask_file = str(cache_dir() / "masks" / f"mask_{model}.nc")
+    parts = sorted(glob(str(cache_dir() / f"subcells_{model}" / "part_*.bin")))
+    if not os.path.isfile(mask_file) or not parts:
+        raise FileNotFoundError(f"water fractions/sub-cells of {model} not found: run `otl-map masks {model}`")
+    inputs = [mask_file, f"{tide_dir}/amp.m2"] + parts
     with Run(f"unified refinement: bundle v2 for {model} ({', '.join(earths)})",
              params=dict(model=model, earth_models=earths, ncell=NCELL or "default"), inputs=inputs, script=__file__) as run:
-        w0, xr, yr, sp = read_grd(f"cpp/mask_{model}.nc")
+        w0, xr, yr, sp = read_grd(mask_file)
         ny, nx = w0.shape
         spx = float(sp[0])
         if abs(nx * spx - 360.0) > 1e-6:      # e.g. 10801 columns with centres 0..360: see tools/cut_seam_column.py
@@ -132,7 +136,7 @@ def main():
         for e in earths:
             T = np.zeros((ny, 3, 2 * M + 1, 2 * M + 1))
             chunks = [list(range(j, min(j + 40, ny))) for j in range(0, ny, 40)]
-            with Pool(min(8, os.cpu_count() or 1)) as pool:
+            with Pool(workers or min(8, os.cpu_count() or 1)) as pool:
                 for res in pool.imap_unordered(_rows, [(GF_FILE[e], c, cy1, csp, M, ny) for c in chunks]):
                     for j, t in res:
                         T[j] = t
@@ -145,7 +149,8 @@ def main():
         json.dump(meta, open(f"{out}/meta.json", "w"), indent=2)
         run.output(f"{out}/meta.json")
         run.note(**{k: meta[k] for k in ("ncell", "cf", "coastal_cells", "stored_cells")})
+    return out
 
 
 if __name__ == "__main__":
-    main()
+    build_bundle(sys.argv[1], sys.argv[2:] or ["PREM"])

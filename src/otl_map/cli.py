@@ -31,6 +31,19 @@ def main(argv=None):
     r.add_argument("--harmonics", nargs="+", help="harmonics (default: all found)")
     r.add_argument("--fill-cells", type=float, default=2.0,
                    help="fill water near the coast from the nearest water node within this many source cells")
+    pr = sps["prepare"]
+    pr.add_argument("model")
+    pr.add_argument("--harmonics", nargs="+")
+    pr.add_argument("--no-extend", action="store_true", help="scale only (output <model>_mod)")
+    b = sps["bundle"]
+    b.add_argument("model")
+    b.add_argument("earths", nargs="*", default=["PREM"], help="PREM, PREM_disp, STW105, STW105_disp")
+    b.add_argument("--workers", type=int)
+    rf = sps["refine"]
+    rf.add_argument("model")
+    rf.add_argument("earth")
+    rf.add_argument("--rundir", required=True, help="directory with the FFT grids of `otl-map compute`")
+    rf.add_argument("--workers", type=int)
     m = sps["masks"]
     m.add_argument("model", help="tide model name (its amp.m2 defines the grid)")
     m.add_argument("--cf", type=int, default=60, help="sub-cells per cell side for coastal cells (default 60)")
@@ -44,6 +57,19 @@ def main(argv=None):
         out = a.out or f"{a.model}_{int(round(1 / a.spacing))}"
         d = resample_tidemodel(a.model, out, a.spacing, a.harmonics, a.fill_cells)
         print(f"{a.model} -> {out} ({a.spacing:g} deg): {d}")
+        return 0
+    if a.cmd == "prepare":
+        from otl_map.prepare import prepare
+        d = prepare(a.model, a.harmonics, extend=not a.no_extend)
+        print(f"{a.model} -> {d}")
+        return 0
+    if a.cmd == "bundle":
+        from otl_map.bundle import build_bundle
+        print(f"bundle -> {build_bundle(a.model, a.earths, workers=a.workers)}")
+        return 0
+    if a.cmd == "refine":
+        from otl_map.refine_grid import refine_grid
+        refine_grid(a.model, a.earth, a.rundir, a.workers)
         return 0
     if a.cmd == "masks":
         import os

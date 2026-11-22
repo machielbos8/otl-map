@@ -10,8 +10,11 @@ Follows the release plan in the private otl_map repository (docs/release_plan_ot
        replacing cpp/create_mask and cpp/create_subcells (`otl-map masks`). Validated for FES2014b: water fractions
        equal to 2e-12 (same 245 376 coastal cells), sub-cells identical except 13 247 of 883 million values that
        differ by 1/255 (rounding); 0.5 s and 26 s against hours. Sub-cells beyond a pole count as land, as in C++.
-3b. [ ] Port `modify_tidemodel`, `bundle.py` and
-       `refine_grid.py` to the package layout.
+3b. [x] `otl-map prepare` (NumPy rewrite of modify_tidemodel: one-cell extension + water-fraction scaling),
+       `otl-map bundle` and `otl-map refine` on the package layout (cache directory, no repo paths).
+       Validated for FES2014b against the production files of the development repository: prepared M2 equal
+       to 2e-12; complete PREM bundle rebuilt from scratch (masks -> prepare -> bundle, 2.5 min on 8 cores):
+       idx, sptr and the coarse kernel table identical, w0 to 2e-12, tide to 1.5e-8 m (float32), sub-cells as in 3.
 4. [ ] Station output: bilinear u/v interpolation, near-field correction, BLQ/JSON, centre-of-mass correction.
 5. [ ] CLI subcommands wired to the modules.
 6. [ ] Tests: FFT = brute force on a small SCHW grid; kernel table = FFT; end-to-end SCHW.
