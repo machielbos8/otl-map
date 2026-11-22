@@ -32,40 +32,40 @@ def main(argv=None):
     r.add_argument("--fill-cells", type=float, default=2.0,
                    help="fill water near the coast from the nearest water node within this many source cells")
     pr = sps["prepare"]
-    pr.add_argument("model")
-    pr.add_argument("--harmonics", nargs="+")
+    pr.add_argument("model", help="tide model (needs its water fractions, `otl-map masks`)")
+    pr.add_argument("--harmonics", nargs="+", help="harmonics (default: all found)")
     pr.add_argument("--no-extend", action="store_true", help="scale only (output <model>_mod)")
     b = sps["bundle"]
-    b.add_argument("model")
+    b.add_argument("model", help="tide model (needs masks and the prepared <model>_mod_ext)")
     b.add_argument("earths", nargs="*", default=["PREM"], help="PREM, PREM_disp, STW105, STW105_disp")
-    b.add_argument("--workers", type=int)
+    b.add_argument("--workers", type=int, help="processes for the kernel tables (default min(8, cores))")
     b.add_argument("--wet-sub", type=int, help="point-load sub-cells per side for whole wet cells beyond the "
                    "0.15 deg fit range (default 10 up to 1/16 deg, 40 for coarser grids)")
     rf = sps["refine"]
-    rf.add_argument("model")
-    rf.add_argument("earth")
+    rf.add_argument("model", help="tide model (its bundle is used)")
+    rf.add_argument("earth", help="PREM, PREM_disp, STW105 or STW105_disp")
     rf.add_argument("--rundir", required=True, help="directory with the FFT grids of `otl-map compute`")
-    rf.add_argument("--workers", type=int)
+    rf.add_argument("--workers", type=int, help="processes (default: all cores)")
     c = sps["compute"]
     c.add_argument("model", help="tide model (its prepared <model>_mod_ext is used)")
     c.add_argument("earth", nargs="?", default="PREM", help="PREM, PREM_disp, STW105, STW105_disp")
     c.add_argument("--rundir", default=".", help="output directory (default .)")
     c.add_argument("--components", nargs="+", type=int, default=[0, 1, 2], help="0 up, 1 north, 2 east")
-    c.add_argument("--harmonics", nargs="+")
+    c.add_argument("--harmonics", nargs="+", help="harmonics (default: all of the tide model)")
     c.add_argument("--region", nargs=4, type=float, metavar=("LON0", "LON1", "LAT0", "LAT1"),
                    help="output nodes of the tide-model lattice inside this box (default: global)")
-    c.add_argument("--frame", choices=["CE", "CM"], default="CE")
+    c.add_argument("--frame", choices=["CE", "CM"], default="CE", help="Green's functions of the CE (default) or CM frame")
     c.add_argument("--raw", action="store_true", help="use the tide model as it is (not <model>_mod_ext)")
-    c.add_argument("--workers", type=int)
+    c.add_argument("--workers", type=int, help="processes (default: all cores)")
     st = sps["stations"]
-    st.add_argument("model")
-    st.add_argument("earth", nargs="?", default="PREM")
+    st.add_argument("model", help="tide model of the maps")
+    st.add_argument("earth", nargs="?", default="PREM", help="PREM, PREM_disp, STW105 or STW105_disp" + " (default PREM)")
     st.add_argument("stationfile", help="lines: name lon lat [height]")
     st.add_argument("--rundir", default=".", help="directory with the FFT grids (default .)")
     st.add_argument("-o", "--out", required=True, help="output file (.blq or .json)")
     st.add_argument("--cmc", action="store_true", help="add the centre-of-mass correction (BLQ output)")
     st.add_argument("--no-nearfield", action="store_true", help="interpolated FFT maps only")
-    st.add_argument("--harmonics", nargs="+")
+    st.add_argument("--harmonics", nargs="+", help="harmonics (default: all maps in the run directory)")
     m = sps["masks"]
     m.add_argument("model", help="tide model name (its amp.m2 defines the grid)")
     m.add_argument("--cf", type=int, default=60, help="sub-cells per cell side for coastal cells (default 60)")
@@ -109,7 +109,7 @@ def main(argv=None):
                 cmc = S.cmc_coefficients(a.model, list(next(iter(res.values())).keys()))
                 S.apply_cmc_blq(blq, sta, cmc)
             S.write_blq(a.out, sta, blq, a.model, a.earth, cmc)
-        print(f"{len(sta)} stations -> {a.out}")
+        print(f"{len(sta)} station{'' if len(sta) == 1 else 's'} -> {a.out}")
         return 0
     if a.cmd == "prepare":
         from otl_map.prepare import prepare
