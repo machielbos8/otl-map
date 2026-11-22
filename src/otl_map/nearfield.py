@@ -83,7 +83,8 @@ import os as _os
 R = 6.371e6
 RAD = _math.pi / 180.0
 ANALYTIC_M = 1000.0          # sub-cells closer than this to P are integrated analytically
-WET_SUB = 10                 # point-load sub-cells per side for a whole wet cell beyond the 0.15 deg fit range
+WET_SUB = 10                 # default point-load sub-cells per side for a whole wet cell beyond the 0.15 deg fit
+                             # range; a bundle may set its own (meta.json "wet_sub", see bundle.wet_sub_for)
 _GF_FILE = {"PREM": "PREM.dat", "PREM_disp": "PREM_disp.dat", "STW105": "STW105.dat",
             "STW105_disp": "STW105_disp.dat"}
 
@@ -100,6 +101,7 @@ class Bundle:
         self.nx, self.ny, self.sp = m["nx"], m["ny"], m["sp"]
         self.x0, self.y0 = m["x0"], m["y0"]                      # first cell centre (lon), north row (lat)
         self.N, self.M, self.cf = m["ncell"], m["M"], m["cf"]
+        self.wet_sub = int(m.get("wet_sub", WET_SUB))
         self.harmonics = m["harmonics"]
         self.rho = m.get("rho", 1030.0)
         ld = lambda n: np.load(_os.path.join(path, n + ".npy"), mmap_mode="r")  # noqa: E731
@@ -200,7 +202,7 @@ class Bundle:
         """Kernel of every patch cell at P (rho * integral of G over the cell's water), (3, ncell).
 
         Whole wet cells inside the 0.15 deg fit range: analytic over the cell (as the FFT near field);
-        other wet cells: WET_SUB^2 point-load sub-cells; coastal cells: cf^2 quadtree sub-cells with
+        other wet cells: wet_sub^2 point-load sub-cells; coastal cells: cf^2 quadtree sub-cells with
         weights f / mean(f) (the cell's FFT mass), analytic within ANALYTIC_M of P, point loads beyond.
         Mirrored-x convention of the FFT kernel (xp = R cos(lat_P) (lon_cell - lon_P)).
         """
@@ -221,7 +223,7 @@ class Bundle:
             for comp in range(3):
                 K[comp, ana] = rho * integrate_cell(comp, self.cc[comp], xa, ya, R * csP * sp * RAD, R * sp * RAD)
         parts = []                                                  # (cell id, lat, dlon, dsp, ws)
-        for sel, n in ((wet, WET_SUB), (coast, cf)):
+        for sel, n in ((wet, self.wet_sub), (coast, cf)):
             ids = np.flatnonzero(sel)
             if not len(ids):
                 continue

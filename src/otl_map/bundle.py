@@ -79,9 +79,20 @@ def _rows(args):
     return out
 
 
-def build_bundle(model, earths=("PREM",), ncell=None, out=None, workers=None):
+def wet_sub_for(sp):
+    """Point-load sub-cells per side for whole wet cells beyond the 0.15 deg fit range (nearfield._fine).
+
+    Up to 1/16 deg these cells are >= 9 km from the station and 10 x 10 suffices.  On coarser lattices
+    (GOT5.5, 1/8 deg) the station's own cell and its neighbours fall in this class, 1-3 km from P; 10 x 10
+    (1.4 km) errs by up to 0.03 mm per m of water, 40 x 40 by 0.0014 mm
+    (paper_JoG/paper_scripts/nf_coarse_grid_owncell_test.py, 2026-11-22)."""
+    return 10 if sp <= 0.0625 + 1e-9 else 40
+
+
+def build_bundle(model, earths=("PREM",), ncell=None, out=None, workers=None, wet_sub=None):
     """Near-field bundle for <model> and the given Earth models; returns the output directory.
-    ncell: patch half-width in cells (default about 0.25 deg, at least 4)."""
+    ncell: patch half-width in cells (default about 0.25 deg, at least 4);
+    wet_sub: point-load sub-cells per side for whole wet cells beyond the fit range (default wet_sub_for)."""
     earths = list(earths)
     NCELL = ncell
     root = bundle_root()
@@ -145,11 +156,11 @@ def build_bundle(model, earths=("PREM",), ncell=None, out=None, workers=None):
             run.output(f"{out}/coarse_{e}.npy")
             print(f"  coarse table {e} done", flush=True)
         meta = dict(model=model, nx=nx, ny=ny, x0=float(xr[0]) + spx / 2, y0=float(yr[1]) - spx / 2, sp=spx,
-                    ncell=N, M=M, cf=cf, harmonics=harms, earth_models=earths, rho=1030.0,
+                    ncell=N, M=M, cf=cf, wet_sub=int(wet_sub or wet_sub_for(spx)), harmonics=harms, earth_models=earths, rho=1030.0,
                     coastal_cells=int(len(ks)), stored_cells=int(len(idx)), tide_model=f"{model}_mod_ext")
         json.dump(meta, open(f"{out}/meta.json", "w"), indent=2)
         run.output(f"{out}/meta.json")
-        run.note(**{k: meta[k] for k in ("ncell", "cf", "coastal_cells", "stored_cells")})
+        run.note(**{k: meta[k] for k in ("ncell", "cf", "wet_sub", "coastal_cells", "stored_cells")})
     return out
 
 

@@ -39,6 +39,8 @@ def main(argv=None):
     b.add_argument("model")
     b.add_argument("earths", nargs="*", default=["PREM"], help="PREM, PREM_disp, STW105, STW105_disp")
     b.add_argument("--workers", type=int)
+    b.add_argument("--wet-sub", type=int, help="point-load sub-cells per side for whole wet cells beyond the "
+                   "0.15 deg fit range (default 10 up to 1/16 deg, 40 for coarser grids)")
     rf = sps["refine"]
     rf.add_argument("model")
     rf.add_argument("earth")
@@ -116,7 +118,7 @@ def main(argv=None):
         return 0
     if a.cmd == "bundle":
         from otl_map.bundle import build_bundle
-        print(f"bundle -> {build_bundle(a.model, a.earths, workers=a.workers)}")
+        print(f"bundle -> {build_bundle(a.model, a.earths, workers=a.workers, wet_sub=a.wet_sub)}")
         return 0
     if a.cmd == "refine":
         from otl_map.refine_grid import refine_grid
